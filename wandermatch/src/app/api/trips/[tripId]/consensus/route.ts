@@ -45,6 +45,7 @@ export async function POST(req: Request, props: { params: Promise<{ tripId: stri
       IMPORTANT: Re-order the itinerary to MINIMIZE travel time between consecutive locations on the same day.
       For each location, provide approximate real-world 'lat' and 'lng' coordinates so they can be plotted on a map.
       Only return a JSON array of objects representing the new itinerary items. Do NOT return markdown, only the raw JSON array.
+      The "category" field MUST BE EXACTLY ONE OF: "activity", "food", "transport", "accommodation", "other".
       
       Expected JSON Format:
       [
@@ -60,7 +61,7 @@ export async function POST(req: Request, props: { params: Promise<{ tripId: stri
     `;
 
     const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
+      model: "gemini-3.6-flash",
       contents: prompt,
     });
     const text = response.text;
@@ -77,11 +78,12 @@ export async function POST(req: Request, props: { params: Promise<{ tripId: stri
 
     // Save the new suggested consensus itinerary
     const userId = (session.user as any).id;
+    const validCategories = ["activity", "food", "transport", "accommodation", "other"];
     const itemsToCreate = suggestedItems.map((item: any, idx: number) => ({
       trip: tripId,
       day: Number(item.day) || 1,
       title: item.title,
-      category: item.category || "activity",
+      category: validCategories.includes(item.category?.toLowerCase()) ? item.category.toLowerCase() : "activity",
       description: item.description || "",
       lat: item.lat,
       lng: item.lng,

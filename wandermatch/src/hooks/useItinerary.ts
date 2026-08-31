@@ -11,6 +11,9 @@ export interface ItineraryItem {
   category: "activity" | "food" | "transport" | "accommodation" | "other";
   lat?: number;
   lng?: number;
+  location?: string;
+  startTime?: string;
+  endTime?: string;
   order: number;
 }
 
@@ -74,10 +77,31 @@ export function useItinerary(tripId: string, initialItems: ItineraryItem[] = [])
     });
   };
 
+  const updateItem = async (itemId: string, updates: Partial<ItineraryItem>) => {
+    // Optimistic update
+    setItems((prev) => prev.map((i) => (i._id === itemId ? { ...i, ...updates } : i)));
+
+    const res = await fetch(`/api/trips/${tripId}/itinerary?itemId=${itemId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updates),
+    });
+
+    if (res.ok) {
+      const updatedItem = await res.json();
+      const normalized = {
+        ...updatedItem,
+        _id: updatedItem._id?.toString?.() ?? updatedItem._id,
+      };
+      setItems((prev) => prev.map((i) => (i._id === itemId ? normalized : i)));
+      socket?.emit("itinerary-update", { tripId, action: "update", item: normalized });
+    }
+  };
+
   const setItinerary = (newItems: ItineraryItem[]) => {
     setItems(newItems);
     socket?.emit("itinerary-update", { tripId, action: "set", items: newItems });
   };
 
-  return { items, addItem, deleteItem, setItinerary };
+  return { items, addItem, updateItem, deleteItem, setItinerary };
 }

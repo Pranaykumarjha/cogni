@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { CalendarIcon, MapPinIcon, UsersIcon } from "lucide-react";
+import JoinTripForm from "@/components/dashboard/JoinTripForm";
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -32,11 +33,14 @@ export default async function DashboardPage() {
           <h1 className="text-4xl font-bold font-outfit text-white mb-2">Your Trips</h1>
           <p className="text-slate-400">Manage and plan your upcoming adventures.</p>
         </div>
-        <Link href="/trip/create">
-          <Button className="bg-purple-600 hover:bg-purple-700 text-white shadow-[0_0_15px_rgba(147,51,234,0.3)]">
-            Create Trip
-          </Button>
-        </Link>
+        <div className="flex items-center gap-4">
+          <JoinTripForm />
+          <Link href="/trip/create">
+            <Button className="bg-purple-600 hover:bg-purple-700 text-white shadow-[0_0_15px_rgba(147,51,234,0.3)] whitespace-nowrap">
+              Create Trip
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {trips.length === 0 ? (
@@ -77,9 +81,9 @@ export default async function DashboardPage() {
                       {trip.status}
                     </span>
                     {isCreator && requestCount > 0 && (
-                      <span className="ml-2 px-2 py-1 text-xs rounded-full bg-rose-500/20 text-rose-400 border border-rose-500/30 flex items-center shadow-[0_0_10px_rgba(244,63,94,0.2)]">
+                      <Link href={`/trip/${trip._id}?tab=members`} className="ml-2 px-2 py-1 text-xs rounded-full bg-rose-500/20 text-rose-400 border border-rose-500/30 flex items-center shadow-[0_0_10px_rgba(244,63,94,0.2)] hover:bg-rose-500/30 transition-colors z-10 relative">
                         <UsersIcon className="w-3 h-3 mr-1" /> {requestCount} Request{requestCount > 1 ? 's' : ''}
-                      </span>
+                      </Link>
                     )}
                   </div>
                   <CardDescription className="flex items-center gap-1 mt-2 text-slate-400">
