@@ -9,6 +9,7 @@ import PackingList from "@/components/trip/PackingList";
 import BookingSearch from "@/components/trip/BookingSearch";
 import ChatDrawer from "@/components/trip/ChatDrawer";
 import ExportButtons from "@/components/trip/ExportButtons";
+import TripMembers from "@/components/trip/TripMembers";
 import Link from "next/link";
 
 export default async function TripPage(props: { params: Promise<{ tripId: string }>, searchParams: Promise<{ tab?: string }> }) {
@@ -23,7 +24,10 @@ export default async function TripPage(props: { params: Promise<{ tripId: string
 
   await dbConnect();
 
-  const trip = await Trip.findById(params.tripId).lean();
+  const trip = await Trip.findById(params.tripId)
+    .populate("members", "_id name email image")
+    .populate("joinRequests", "_id name email image")
+    .lean();
   if (!trip) {
     return <div>Trip not found</div>;
   }
@@ -40,6 +44,23 @@ export default async function TripPage(props: { params: Promise<{ tripId: string
     order: i.order,
     lat: i.lat,
     lng: i.lng,
+    location: i.location,
+    startTime: i.startTime,
+    endTime: i.endTime,
+  }));
+
+  const serializedMembers = (trip.members as any[]).map(m => ({
+    _id: m._id.toString(),
+    name: m.name,
+    email: m.email,
+    image: m.image
+  }));
+
+  const serializedRequests = (trip.joinRequests as any[]).map(req => ({
+    _id: req._id.toString(),
+    name: req.name,
+    email: req.email,
+    image: req.image
   }));
 
   return (
@@ -77,6 +98,24 @@ export default async function TripPage(props: { params: Promise<{ tripId: string
             >
               Search
             </Link>
+            <Link 
+              href={`/trip/${params.tripId}/vote`}
+              className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors text-slate-400 hover:text-white`}
+            >
+              Vote
+            </Link>
+            <Link 
+              href={`/trip/${params.tripId}/collage`}
+              className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors text-slate-400 hover:text-white`}
+            >
+              Collage
+            </Link>
+            <Link 
+              href={`/trip/${params.tripId}?tab=members`}
+              className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${activeTab === "members" ? "bg-slate-800 text-white shadow-sm" : "text-slate-400 hover:text-white"}`}
+            >
+              Members
+            </Link>
           </div>
           <div className="text-sm text-slate-300 ml-4">Invite Code: <span className="font-mono bg-slate-800 px-2 py-1 rounded">{trip.inviteCode}</span></div>
           {activeTab === "itinerary" && (
@@ -92,15 +131,27 @@ export default async function TripPage(props: { params: Promise<{ tripId: string
         </div>
       </header>
       
-      <main className="flex-1 overflow-x-auto">
+      <main className="flex-1 overflow-hidden flex flex-col">
         {activeTab === "itinerary" ? (
-          <ItineraryEditor tripId={params.tripId} initialItems={initialItems} />
+          <ItineraryEditor
+            tripId={params.tripId}
+            initialItems={initialItems}
+            startDate={trip.startDate.toString()}
+            endDate={trip.endDate.toString()}
+          />
         ) : activeTab === "expenses" ? (
           <ExpenseSplitter tripId={params.tripId} />
         ) : activeTab === "packing" ? (
           <PackingList tripId={params.tripId} />
         ) : activeTab === "search" ? (
           <BookingSearch tripId={params.tripId} destination={trip.destination} />
+        ) : activeTab === "members" ? (
+          <TripMembers 
+            tripId={params.tripId} 
+            isCreator={trip.creator.toString() === (session.user as any).id} 
+            members={serializedMembers} 
+            joinRequests={serializedRequests} 
+          />
         ) : null}
       </main>
 

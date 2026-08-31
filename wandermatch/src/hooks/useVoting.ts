@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useSocket } from "../useSocket";
+import { useSocket } from "./useSocket";
 
 export interface Vote {
   user: string;
